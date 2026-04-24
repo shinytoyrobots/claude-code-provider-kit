@@ -1,0 +1,13 @@
+# claude-code-bridge — shared LiteLLM proxy settings
+# This file contains settings common to all providers.
+# Provider-specific model lists live in providers/*.yaml.
+#
+# Usage: merge this with a provider config when starting LiteLLM:
+#   litellm --config templates/litellm.base.yaml --config providers/deepseek.yaml
+
+litellm_settings:
+  drop_params: true
+  # drop_params silently strips parameters that a provider doesn't accept
+  # (e.g. top_k for providers that don't support it). Without this, Claude Code
+  # requests fail for most non-Anthropic providers because Claude Code sends
+  # Anthropic-specific parameters in every request.
