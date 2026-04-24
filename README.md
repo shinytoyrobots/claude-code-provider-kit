@@ -47,6 +47,8 @@ export DEEPSEEK_API_KEY="your-key-here"
 claude-deepseek
 ```
 
+To persist the key across sessions, add the `export` line to your `~/.zshrc` or `~/.bashrc`.
+
 That's it. Claude Code launches with DeepSeek as the backing model. Tier aliases work automatically — `opus` routes to the provider's flagship, `sonnet` to the workhorse, `haiku` to the cheap tier.
 
 Verify the backing model:
