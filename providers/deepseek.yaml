@@ -1,61 +1,23 @@
 # claude-code-bridge — DeepSeek provider template
 #
-# Tier mapping (used by Claude Code's per-skill model routing):
-#   Opus  → deepseek-v4-pro   (flagship — best quality, higher cost)
-#   Sonnet → deepseek-v4-flash (workhorse — fast, cheap)
-#   Haiku  → deepseek-v4-flash (cheap tier — same as Sonnet)
+# Routes through LiteLLM's OpenAI provider (not DeepSeek provider) to avoid
+# the beta endpoint which forces reasoning mode. DeepSeek's API is
+# OpenAI-compatible, so this works transparently.
 #
-# Why Sonnet and Haiku both map to v4-flash:
-#   DeepSeek V4 has two meaningful tiers: v4-pro (slow, expensive, best) and
-#   v4-flash (fast, cheap, good enough for most tasks). There is no middle tier.
-#   Using v4-pro for the Sonnet slot would roughly double the cost of most skill
-#   calls without a meaningful quality improvement for routine work. If you find
-#   v4-flash insufficient for Sonnet-tier tasks, swap it to v4-pro below.
-#
-# How to override:
-#   - Change a tier alias: edit the model_name field (e.g. change "sonnet" to
-#     point at deepseek/deepseek-v4-pro instead of deepseek/deepseek-v4-flash)
-#   - Add a model: copy any entry below and change model_name + model
-#   - Remove a model: delete or comment out the entry
-#
-# Shared settings (drop_params, etc.) live in templates/litellm.base.yaml.
-# Start LiteLLM with both configs:
-#   litellm --config templates/litellm.base.yaml --config providers/deepseek.yaml
+# Model mapping:
+#   deepseek-chat = DeepSeek V4 Flash (non-reasoning mode)
+#   All tiers currently map to deepseek-chat until reasoning_content
+#   round-trip support is added for deepseek-v4-pro.
 
 model_list:
-  # --- Tier aliases (Claude Code reads these via ANTHROPIC_DEFAULT_*_MODEL) ---
-  - model_name: opus
-    litellm_params:
-      model: deepseek/deepseek-v4-pro
-      api_key: os.environ/DEEPSEEK_API_KEY
-
-  - model_name: sonnet
-    litellm_params:
-      model: deepseek/deepseek-v4-flash
-      api_key: os.environ/DEEPSEEK_API_KEY
-
-  - model_name: haiku
-    litellm_params:
-      model: deepseek/deepseek-v4-flash
-      api_key: os.environ/DEEPSEEK_API_KEY
-
-  # --- Raw model names (for direct use or debugging) ---
-  - model_name: deepseek-v4-pro
-    litellm_params:
-      model: deepseek/deepseek-v4-pro
-      api_key: os.environ/DEEPSEEK_API_KEY
-
-  - model_name: deepseek-v4-flash
-    litellm_params:
-      model: deepseek/deepseek-v4-flash
-      api_key: os.environ/DEEPSEEK_API_KEY
-
   - model_name: deepseek-chat
     litellm_params:
-      model: deepseek/deepseek-chat
+      model: hosted_vllm/deepseek-chat
       api_key: os.environ/DEEPSEEK_API_KEY
+      api_base: https://api.deepseek.com/v1
 
   - model_name: deepseek-reasoner
     litellm_params:
-      model: deepseek/deepseek-reasoner
+      model: hosted_vllm/deepseek-reasoner
       api_key: os.environ/DEEPSEEK_API_KEY
+      api_base: https://api.deepseek.com/v1
