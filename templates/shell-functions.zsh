@@ -49,7 +49,6 @@ _claude_code_bridge_launch() {
   fi
 
   local port="${CLAUDE_BRIDGE_PROXY_PORT:-4000}"
-  local log="/tmp/claude-code-bridge-litellm-${port}.log"
 
   # Resolve config paths relative to this script's install location.
   # The installer places configs in ~/.config/claude-code-bridge/.
@@ -57,7 +56,22 @@ _claude_code_bridge_launch() {
   local base_config="${config_dir}/templates/litellm.base.yaml"
   local provider_config="${config_dir}/${config_file}"
 
-  # Start LiteLLM if not already running on the configured port.
+  # If port is already in use and user didn't explicitly choose it, scan for a free one.
+  if (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null && [ -z "${CLAUDE_BRIDGE_PROXY_PORT:-}" ]; then
+    local max_port=$((port + 10))
+    while (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null && (( port < max_port )); do
+      (( port++ ))
+    done
+    if (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null; then
+      echo "claude-code-bridge: ports 4000-4010 all in use." >&2
+      echo "Set CLAUDE_BRIDGE_PROXY_PORT to an available port." >&2
+      return 1
+    fi
+  fi
+
+  local log="/tmp/claude-code-bridge-litellm-${port}.log"
+
+  # Start LiteLLM if not already running on the selected port.
   if ! (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null; then
     echo "Starting LiteLLM proxy on port ${port}..."
     nohup litellm \

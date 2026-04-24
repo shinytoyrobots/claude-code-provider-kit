@@ -46,18 +46,20 @@ Restart your shell function after editing the YAML.
 
 ## LiteLLM port collision
 
-**Symptom**: "LiteLLM failed to start within 10 seconds" or "Address already in use."
+**Symptom**: "ports 4000-4010 all in use" or "LiteLLM failed to start within 10 seconds."
 
-**Cause**: Another process is using port 4000 (the default).
+**Cause**: Other processes are using the default port range.
 
-**Fix**: Set a different port:
+By default, the shell functions auto-scan ports 4000-4010 to find a free one. You only see this error if all 11 ports are occupied.
+
+**Fix**: Set a specific port you know is free:
 
 ```bash
-export CLAUDE_BRIDGE_PROXY_PORT=4001
+export CLAUDE_BRIDGE_PROXY_PORT=4020
 claude-deepseek
 ```
 
-To find what's using port 4000:
+To find what's using a port:
 
 ```bash
 lsof -i :4000
