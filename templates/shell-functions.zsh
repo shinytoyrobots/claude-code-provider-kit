@@ -70,15 +70,18 @@ _claude_code_bridge_launch() {
   fi
 
   local log="/tmp/claude-code-bridge-litellm-${port}.log"
+  local litellm_pid=""
 
   # Start LiteLLM if not already running on the selected port.
   if ! nc -z localhost "$port" 2>/dev/null; then
     echo "Starting LiteLLM proxy on port ${port}..."
+    PYTHONPATH="${config_dir}/templates:${PYTHONPATH:-}" \
     nohup litellm \
       --config "$base_config" \
       --config "$provider_config" \
       --port "$port" \
       > "$log" 2>&1 &
+    litellm_pid=$!
 
     local i=0
     while ! nc -z localhost "$port" 2>/dev/null && (( i < 20 )); do
@@ -91,7 +94,7 @@ _claude_code_bridge_launch() {
       echo "Check the log: $log" >&2
       return 1
     fi
-    echo "LiteLLM proxy ready on port ${port}."
+    echo "LiteLLM proxy ready on port ${port} (PID ${litellm_pid})."
   fi
 
   # Launch Claude Code with the provider's env vars.
@@ -103,6 +106,13 @@ _claude_code_bridge_launch() {
   ANTHROPIC_DEFAULT_SONNET_MODEL="$sonnet_model" \
   ANTHROPIC_DEFAULT_HAIKU_MODEL="$haiku_model" \
   claude --permission-mode dontAsk "$@"
+
+  # Clean up LiteLLM if we started it.
+  if [[ -n "$litellm_pid" ]] && kill -0 "$litellm_pid" 2>/dev/null; then
+    echo "Stopping LiteLLM proxy (PID ${litellm_pid})..."
+    kill "$litellm_pid" 2>/dev/null
+    wait "$litellm_pid" 2>/dev/null
+  fi
 }
 
 claude-deepseek() {

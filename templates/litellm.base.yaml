@@ -11,3 +11,4 @@ litellm_settings:
   # (e.g. top_k for providers that don't support it). Without this, Claude Code
   # requests fail for most non-Anthropic providers because Claude Code sends
   # Anthropic-specific parameters in every request.
+  callbacks: proxy_handler.ToolSchemaFixer

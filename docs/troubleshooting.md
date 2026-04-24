@@ -65,6 +65,18 @@ To find what's using a port:
 lsof -i :4000
 ```
 
+## OpenAI schema validation errors (400 Bad Request)
+
+**Symptom**: OpenAI returns errors like `Invalid schema for function: ... "array" ... missing required key "items"`.
+
+**Cause**: Some MCP servers emit JSON schemas that Anthropic tolerates but OpenAI rejects. The most common issue is array properties missing the required `items` field.
+
+**Fix**: The proxy handler (`proxy_handler.py`) patches these schemas automatically. If you still see this error, verify the handler is loaded:
+
+1. Check `litellm.base.yaml` includes `callbacks: proxy_handler.ToolSchemaFixer`
+2. Re-run the installer (`./install.sh`) to copy the latest `proxy_handler.py`
+3. Restart the shell function (it kills the old LiteLLM process automatically)
+
 ## API key not set
 
 **Symptom**: `claude-code-bridge: DEEPSEEK_API_KEY is not set.`
