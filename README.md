@@ -81,7 +81,7 @@ The kit installs four things:
 
 | Provider | Opus | Sonnet | Haiku | Notes |
 |----------|------|--------|-------|-------|
-| **DeepSeek** | deepseek-v4-pro | deepseek-v4-flash | deepseek-v4-flash | Validated end-to-end with complex multi-agent workflows |
+| **DeepSeek** | deepseek-reasoner | deepseek-chat | deepseek-chat | Legacy names — [V4 migration in progress](docs/setup-deepseek.md#deprecation-warning) |
 | **OpenAI** | gpt-5 | gpt-5-mini | gpt-5-nano | [Sonnet slot is ambiguous](docs/tier-mapping.md) — consider o3/o4 for reasoning |
 | **Gemini** | gemini-2.5-pro | gemini-2.5-flash | gemini-2.5-flash | Best for long-context tasks (1M+ tokens) |
 

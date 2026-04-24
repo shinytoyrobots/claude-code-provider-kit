@@ -8,7 +8,7 @@ Here's the chain:
 
 1. A skill's frontmatter declares `model: opus` (or `sonnet` or `haiku`)
 2. Claude Code reads the corresponding environment variable: `ANTHROPIC_DEFAULT_OPUS_MODEL`
-3. That variable is set by the shell function (for example, `claude-deepseek` sets it to `deepseek-v4-pro`)
+3. That variable is set by the shell function (for example, `claude-deepseek` sets it to `deepseek-reasoner`)
 4. Claude Code sends the request to LiteLLM at `ANTHROPIC_BASE_URL`
 5. LiteLLM matches the model alias and routes to the provider's actual model
 
@@ -21,24 +21,24 @@ The shell functions export these variables:
 | Variable | Purpose | Example (DeepSeek) |
 |----------|---------|-------------------|
 | `ANTHROPIC_BASE_URL` | Points Claude Code at LiteLLM | `http://localhost:4000` |
-| `ANTHROPIC_MODEL` | Default model for the session | `deepseek-v4-flash` |
-| `ANTHROPIC_DEFAULT_OPUS_MODEL` | Opus tier target | `deepseek-v4-pro` |
-| `ANTHROPIC_DEFAULT_SONNET_MODEL` | Sonnet tier target | `deepseek-v4-flash` |
-| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | Haiku tier target | `deepseek-v4-flash` |
+| `ANTHROPIC_MODEL` | Default model for the session | `deepseek-chat` |
+| `ANTHROPIC_DEFAULT_OPUS_MODEL` | Opus tier target | `deepseek-reasoner` |
+| `ANTHROPIC_DEFAULT_SONNET_MODEL` | Sonnet tier target | `deepseek-chat` |
+| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | Haiku tier target | `deepseek-chat` |
 
 ## Provider tier maps
 
 | Claude Code tier | DeepSeek | OpenAI | Gemini |
 |------------------|----------|--------|--------|
-| **Opus** (flagship) | deepseek-v4-pro | gpt-5 | gemini-2.5-pro |
-| **Sonnet** (workhorse) | deepseek-v4-flash | gpt-5-mini | gemini-2.5-flash |
-| **Haiku** (cheap) | deepseek-v4-flash | gpt-5-nano | gemini-2.5-flash |
+| **Opus** (flagship) | deepseek-reasoner | gpt-5 | gemini-2.5-pro |
+| **Sonnet** (workhorse) | deepseek-chat | gpt-5-mini | gemini-2.5-flash |
+| **Haiku** (cheap) | deepseek-chat | gpt-5-nano | gemini-2.5-flash |
 
 ## Why these defaults?
 
 The kit ships opinionated defaults because picking a default is strictly better than shipping nothing and making every user research model lineups.
 
-**DeepSeek**: Two meaningful V4 tiers. v4-pro is the flagship; v4-flash is fast and cheap enough for both Sonnet and Haiku slots. Using v4-pro for Sonnet would roughly double the cost of most skill calls.
+**DeepSeek**: Two meaningful tiers. `deepseek-reasoner` is the flagship; `deepseek-chat` is fast and cheap enough for both Sonnet and Haiku slots. Using `deepseek-reasoner` for Sonnet would roughly double the cost of most skill calls. These are legacy model names — V4 names (`deepseek-v4-pro`, `deepseek-v4-flash`) will replace them once LiteLLM routing issues are resolved. See the [DeepSeek setup guide](setup-deepseek.md#deprecation-warning).
 
 **OpenAI**: Three tiers that map naturally. The Sonnet slot (gpt-5-mini) is the most debatable — see the [OpenAI setup guide](setup-openai.md) for alternative mappings with o-series reasoning models.
 
@@ -48,13 +48,13 @@ The kit ships opinionated defaults because picking a default is strictly better 
 
 ### Change a tier mapping
 
-Edit the provider's YAML file in `providers/`. For example, to map Sonnet to `deepseek-v4-pro`:
+Edit the provider's YAML file in `providers/`. For example, to map Sonnet to `deepseek-reasoner`:
 
 ```yaml
 # In providers/deepseek.yaml, change:
 - model_name: sonnet
   litellm_params:
-    model: deepseek/deepseek-v4-pro   # was deepseek/deepseek-v4-flash
+    model: hosted_vllm/deepseek-reasoner   # was hosted_vllm/deepseek-chat
     api_key: os.environ/DEEPSEEK_API_KEY
 ```
 

@@ -34,12 +34,12 @@ curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API
   | python3 -m json.tool
 ```
 
-Update the model ID in `~/.config/claude-code-provider-kit/providers/{provider}.yaml`. For example, if `deepseek-v4-pro` has been renamed:
+Update the model ID in `~/.config/claude-code-provider-kit/providers/{provider}.yaml`. For example, if `deepseek-reasoner` has been renamed:
 
 ```yaml
-- model_name: opus
+- model_name: deepseek-reasoner
   litellm_params:
-    model: deepseek/correct-model-name-here
+    model: hosted_vllm/correct-model-name-here
 ```
 
 Restart your shell function after editing the YAML.

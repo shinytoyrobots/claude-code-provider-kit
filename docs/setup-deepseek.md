@@ -1,6 +1,6 @@
 # DeepSeek Setup Guide
 
-> **Recommended for first-time users.** DeepSeek is the most-validated provider path — the author ran complex multi-agent skills (including `/dr-research`) end-to-end against DeepSeek V4 Pro before building this kit.
+> **Recommended for first-time users.** DeepSeek is the most-validated provider path — the author ran complex multi-agent skills (including `/dr-research`) end-to-end against DeepSeek before building this kit.
 
 ## Prerequisites
 
@@ -47,22 +47,19 @@ You should see a response identifying a DeepSeek model.
 
 | Claude Code tier | DeepSeek model | Use case |
 |------------------|----------------|----------|
-| `opus` | deepseek-v4-pro | Flagship — complex reasoning, multi-step tasks |
-| `sonnet` | deepseek-v4-flash | Workhorse — routine tasks, fast responses |
-| `haiku` | deepseek-v4-flash | Cheap — same as Sonnet (DeepSeek has two tiers) |
+| `opus` | deepseek-reasoner | Flagship — reasoning-focused model |
+| `sonnet` | deepseek-chat | Workhorse — general-purpose, fast responses |
+| `haiku` | deepseek-chat | Cheap — same as Sonnet (DeepSeek has two tiers) |
 
-Sonnet and Haiku both map to `deepseek-v4-flash` because DeepSeek V4 has two meaningful tiers. Using `v4-pro` for the Sonnet slot would roughly double the cost of most skill calls without meaningful quality improvement for routine work.
+Sonnet and Haiku both map to `deepseek-chat` because DeepSeek has two meaningful tiers. Using `deepseek-reasoner` for the Sonnet slot would roughly double the cost of most skill calls without meaningful quality improvement for routine work.
 
 To override: edit `providers/deepseek.yaml` and change the `model_name` alias mappings. See [tier mapping](tier-mapping.md) for details.
 
-## Additional models
+## Deprecation warning
 
-The config also includes raw model names for direct use:
+The `deepseek-chat` and `deepseek-reasoner` model names are legacy identifiers that DeepSeek plans to deprecate on **July 24, 2026**. The V4 replacements (`deepseek-v4-pro`, `deepseek-v4-flash`) exist but currently trigger unresolvable reasoning-mode errors through LiteLLM's provider path.
 
-- `deepseek-chat` — general-purpose chat model
-- `deepseek-reasoner` — reasoning-focused model
-
-These are accessible when explicitly requested but not part of the tier mapping.
+We're actively working on V4 configuration. Once resolved, the provider config will update to V4 names. In the meantime, the legacy names work correctly.
 
 ## Known limitations
 
