@@ -25,6 +25,10 @@ import sys
 
 _REMOTE_MCP_PREFIX = "mcp__claude_ai_"
 
+# Anthropic-specific parameters that LiteLLM's drop_params misses in the
+# experimental passthrough path. Strip them ourselves.
+_UNSUPPORTED_PARAMS = {"context_management"}
+
 
 def _fix_array_schemas(schema):
     """Walk a JSON Schema tree adding `items: {}` to bare array types. Returns fix count."""
@@ -55,10 +59,18 @@ def _tool_name(tool):
 
 
 def _patch_request(data):
-    """Strip remote MCP tools and fix schemas. Returns True only if modified."""
+    """Strip unsupported params, remote MCP tools, and fix schemas."""
+    modified = False
+
+    # Strip Anthropic-specific params that LiteLLM's drop_params misses
+    for param in _UNSUPPORTED_PARAMS:
+        if param in data:
+            del data[param]
+            modified = True
+
     tools = data.get("tools")
     if not tools:
-        return False
+        return modified
 
     # Strip remote MCP tools (they only work via claude.ai infrastructure)
     original_count = len(tools)
@@ -86,7 +98,7 @@ def _patch_request(data):
             file=sys.stderr,
         )
 
-    return stripped > 0 or schema_fixes > 0
+    return modified or stripped > 0 or schema_fixes > 0
 
 
 class _RequestPatcherMiddleware:
