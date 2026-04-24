@@ -21,10 +21,6 @@ import sys
 
 _REMOTE_MCP_PREFIX = "mcp__claude_ai_"
 
-# Tools that are blocked by dontAsk permission mode (required for non-Anthropic
-# models). Stripping them prevents models from attempting calls that always fail.
-_BLOCKED_TOOLS = {"AskUserQuestion"}
-
 
 def _fix_array_schemas(schema):
     """Walk a JSON Schema tree adding `items: {}` to bare array types."""
@@ -59,13 +55,9 @@ def _patch_request(data):
 
     modified = False
 
-    # Strip remote MCP tools and tools blocked by dontAsk mode
+    # Strip remote MCP tools (they only work via claude.ai infrastructure)
     original_count = len(tools)
-    tools[:] = [
-        t for t in tools
-        if not _tool_name(t).startswith(_REMOTE_MCP_PREFIX)
-        and _tool_name(t) not in _BLOCKED_TOOLS
-    ]
+    tools[:] = [t for t in tools if not _tool_name(t).startswith(_REMOTE_MCP_PREFIX)]
     stripped = original_count - len(tools)
     if stripped:
         print(
