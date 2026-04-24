@@ -2,6 +2,8 @@ sprints/
 .DS_Store
 node_modules/
 .env
-.env.local
+.env.*
+!.env.example
 *.log
 .claude/
+
