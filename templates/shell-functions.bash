@@ -74,14 +74,22 @@ _claude_code_bridge_launch() {
   # Start LiteLLM if not already running on the selected port.
   if ! nc -z localhost "$port" 2>/dev/null; then
     echo "Starting LiteLLM proxy on port ${port}..."
-    # Use the same Python that litellm is installed in.
-    local litellm_python
-    litellm_python="$(head -1 "$(command -v litellm)" | sed 's/^#!//')"
-    nohup "$litellm_python" "${config_dir}/templates/start-proxy.py" \
-      --config "$base_config" \
-      --config "$provider_config" \
-      --port "$port" \
-      > "$log" 2>&1 &
+    if [ -f "${config_dir}/templates/start-proxy.py" ] && [ "$provider" = "openai" ]; then
+      # OpenAI needs the middleware (schema fixes + remote MCP tool stripping).
+      local litellm_python
+      litellm_python="$(head -1 "$(command -v litellm)" | sed 's/^#!//')"
+      nohup "$litellm_python" "${config_dir}/templates/start-proxy.py" \
+        --config "$base_config" \
+        --config "$provider_config" \
+        --port "$port" \
+        > "$log" 2>&1 &
+    else
+      nohup litellm \
+        --config "$base_config" \
+        --config "$provider_config" \
+        --port "$port" \
+        > "$log" 2>&1 &
+    fi
     litellm_pid=$!
 
     local i=0
