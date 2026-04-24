@@ -36,6 +36,66 @@ else
   PROVIDER="non-Claude ($MODEL)"
 fi
 
+# ---------------------------------------------------------------------------
+# Agent catalog enumeration (story-001)
+# Reads ~/.claude/commands/agents/*.md, parses YAML frontmatter, and builds
+# AGENT_CATALOG — a newline-separated list of "name: description" entries.
+# Story-002 will inject AGENT_CATALOG into the guidance block.
+#
+# Design notes:
+#   - awk reads only the first frontmatter block (between the first two "---"
+#     delimiters) so large agent bodies don't slow parsing.
+#   - Files with a name but no description produce an empty description string
+#     (AC-6), not a skipped entry.
+#   - Files with no name field, or where awk fails, are silently skipped (AC-3).
+#   - Missing or empty directory produces an empty AGENT_CATALOG (AC-2).
+# ---------------------------------------------------------------------------
+
+AGENTS_DIR="${HOME}/.claude/commands/agents"
+AGENT_CATALOG=""
+
+# parse_agent_frontmatter FILE
+# Prints "name<TAB>description" for the agent file, or nothing on failure.
+# Uses a single awk pass; no subshells inside the loop body.
+parse_agent_frontmatter() {
+  local file="$1"
+  awk '
+    BEGIN { in_fm=0; past_fm=0; name=""; desc="" }
+    # First delimiter opens frontmatter
+    /^---[[:space:]]*$/ && in_fm==0 && past_fm==0 { in_fm=1; next }
+    # Second delimiter closes frontmatter; print and exit
+    /^---[[:space:]]*$/ && in_fm==1 { past_fm=1; if (name != "") print name "\t" desc; exit }
+    in_fm==1 {
+      if (/^name:[[:space:]]*/) {
+        sub(/^name:[[:space:]]*/, "")
+        gsub(/^["'"'"']|["'"'"']$/, "")  # strip optional quotes
+        name=$0
+      } else if (/^description:[[:space:]]*/) {
+        sub(/^description:[[:space:]]*/, "")
+        gsub(/^["'"'"']|["'"'"']$/, "")  # strip optional quotes
+        desc=$0
+      }
+    }
+  ' "$file" 2>/dev/null
+}
+
+if [[ -d "$AGENTS_DIR" ]]; then
+  for agent_file in "${AGENTS_DIR}"/*.md; do
+    # Guard against glob returning a literal "*.md" when dir is empty
+    [[ -f "$agent_file" ]] || continue
+    parsed="$(parse_agent_frontmatter "$agent_file")"
+    [[ -z "$parsed" ]] && continue
+    agent_name="${parsed%%$'\t'*}"
+    agent_desc="${parsed#*$'\t'}"
+    if [[ -n "$AGENT_CATALOG" ]]; then
+      AGENT_CATALOG+=$'\n'
+    fi
+    AGENT_CATALOG+="${agent_name}: ${agent_desc}"
+  done
+fi
+
+# ---------------------------------------------------------------------------
+
 # Guidance text — kept under 600 tokens to avoid dominating context.
 # Covers all four required topics: Agent tool, subagent parallelism,
 # tier-alias routing, and system-reminder blocks.
