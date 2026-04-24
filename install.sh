@@ -247,7 +247,7 @@ if ! "$DRY_RUN"; then
 fi
 
 atomic_copy "${SCRIPT_DIR}/templates/litellm.base.yaml" "${INSTALL_DIR}/templates/litellm.base.yaml"
-atomic_copy "${SCRIPT_DIR}/templates/proxy_handler.py" "${INSTALL_DIR}/templates/proxy_handler.py"
+atomic_copy "${SCRIPT_DIR}/templates/start-proxy.py" "${INSTALL_DIR}/templates/start-proxy.py"
 atomic_copy "${SCRIPT_DIR}/templates/shell-functions.zsh" "${INSTALL_DIR}/templates/shell-functions.zsh"
 atomic_copy "${SCRIPT_DIR}/templates/shell-functions.bash" "${INSTALL_DIR}/templates/shell-functions.bash"
 success "Copied shell function templates"

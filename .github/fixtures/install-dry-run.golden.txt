@@ -4,7 +4,7 @@ claude-code-bridge: installing
   install dir: HOME/.config/claude-code-bridge
 
   COPY REPO_DIR/templates/litellm.base.yaml -> HOME/.config/claude-code-bridge/templates/litellm.base.yaml
-  COPY REPO_DIR/templates/proxy_handler.py -> HOME/.config/claude-code-bridge/templates/proxy_handler.py
+  COPY REPO_DIR/templates/start-proxy.py -> HOME/.config/claude-code-bridge/templates/start-proxy.py
   COPY REPO_DIR/templates/shell-functions.zsh -> HOME/.config/claude-code-bridge/templates/shell-functions.zsh
   COPY REPO_DIR/templates/shell-functions.bash -> HOME/.config/claude-code-bridge/templates/shell-functions.bash
   [ok] Copied shell function templates
