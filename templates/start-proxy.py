@@ -6,10 +6,12 @@ Claude Code sends). This script wraps the LiteLLM proxy app with raw ASGI
 middleware that patches requests at the HTTP layer — before any endpoint
 handler runs.
 
-Two transformations:
-  1. Strip remote MCP tools (mcp__claude_ai_*) — they only work via
+Three transformations:
+  1. Strip unsupported Anthropic params (context_management, thinking)
+     that LiteLLM's drop_params misses in the passthrough path.
+  2. Strip remote MCP tools (mcp__claude_ai_*) — they only work via
      claude.ai and add noise for other providers.
-  2. Fix malformed array schemas (missing `items`) that strict providers
+  3. Fix malformed array schemas (missing `items`) that strict providers
      like OpenAI reject.
 
 Approach: monkey-patch uvicorn.run to wrap the app AFTER LiteLLM has
@@ -27,7 +29,10 @@ _REMOTE_MCP_PREFIX = "mcp__claude_ai_"
 
 # Anthropic-specific parameters that LiteLLM's drop_params misses in the
 # experimental passthrough path. Strip them ourselves.
-_UNSUPPORTED_PARAMS = {"context_management"}
+# - context_management: Anthropic-only context window management
+# - thinking: Claude's extended thinking — triggers reasoning mode in DeepSeek,
+#   which returns reasoning_content that Claude Code can't pass back
+_UNSUPPORTED_PARAMS = {"context_management", "thinking"}
 
 
 def _fix_array_schemas(schema):

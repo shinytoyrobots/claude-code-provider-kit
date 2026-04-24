@@ -11,3 +11,7 @@ litellm_settings:
   # (e.g. top_k for providers that don't support it). Without this, Claude Code
   # requests fail for most non-Anthropic providers because Claude Code sends
   # Anthropic-specific parameters in every request.
+
+  modify_params: true
+  # modify_params lets LiteLLM auto-adjust requests when provider-specific
+  # content (like DeepSeek reasoning_content) is lost between turns.
