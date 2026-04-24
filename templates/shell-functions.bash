@@ -13,10 +13,10 @@ _claude_code_bridge_launch() {
     deepseek)
       api_key_var="DEEPSEEK_API_KEY"
       config_file="providers/deepseek.yaml"
-      opus_model="deepseek-v4-pro"
-      sonnet_model="deepseek-v4-flash"
-      haiku_model="deepseek-v4-flash"
-      default_model="deepseek-v4-flash"
+      opus_model="deepseek-reasoner"
+      sonnet_model="deepseek-chat"
+      haiku_model="deepseek-chat"
+      default_model="deepseek-chat"
       ;;
     openai)
       api_key_var="OPENAI_API_KEY"

@@ -6,13 +6,14 @@ Claude Code sends). This script wraps the LiteLLM proxy app with raw ASGI
 middleware that patches requests at the HTTP layer — before any endpoint
 handler runs.
 
-Three transformations:
-  1. Strip unsupported Anthropic params (context_management, thinking)
-     that LiteLLM's drop_params misses in the passthrough path.
-  2. Strip remote MCP tools (mcp__claude_ai_*) — they only work via
-     claude.ai and add noise for other providers.
-  3. Fix malformed array schemas (missing `items`) that strict providers
-     like OpenAI reject.
+Four transformations:
+  1. Strip unsupported Anthropic params (context_management) that
+     LiteLLM's drop_params misses in the passthrough path.
+  2. Override thinking param to disabled — prevents providers from
+     entering reasoning mode that Claude Code can't round-trip.
+  3. Strip thinking blocks from conversation history messages.
+  4. Strip remote MCP tools (mcp__claude_ai_*) and fix malformed
+     array schemas (missing `items`).
 
 Approach: monkey-patch uvicorn.run to wrap the app AFTER LiteLLM has
 fully initialized (config loaded, settings applied). This avoids
@@ -29,10 +30,12 @@ _REMOTE_MCP_PREFIX = "mcp__claude_ai_"
 
 # Anthropic-specific parameters that LiteLLM's drop_params misses in the
 # experimental passthrough path. Strip them ourselves.
-# - context_management: Anthropic-only context window management
-# - thinking: Claude's extended thinking — triggers reasoning mode in DeepSeek,
-#   which returns reasoning_content that Claude Code can't pass back
-_UNSUPPORTED_PARAMS = {"context_management", "thinking"}
+_UNSUPPORTED_PARAMS = {"context_management"}
+
+# Parameters to override (not strip) — value replaces whatever Claude Code sent.
+# thinking: must be explicitly disabled or DeepSeek models default to reasoning
+# mode, which returns reasoning_content that Claude Code can't pass back.
+_PARAM_OVERRIDES = {"thinking": {"type": "disabled"}}
 
 
 def _fix_array_schemas(schema):
@@ -67,10 +70,27 @@ def _patch_request(data):
     """Strip unsupported params, remote MCP tools, and fix schemas."""
     modified = False
 
+    # Strip thinking blocks from messages — providers may return reasoning
+    # content that gets translated to Anthropic thinking blocks, but Claude
+    # Code can't round-trip them back to the provider's format.
+    for msg in data.get("messages", []):
+        content = msg.get("content")
+        if isinstance(content, list):
+            filtered = [b for b in content if b.get("type") != "thinking"]
+            if len(filtered) < len(content):
+                msg["content"] = filtered
+                modified = True
+
     # Strip Anthropic-specific params that LiteLLM's drop_params misses
     for param in _UNSUPPORTED_PARAMS:
         if param in data:
             del data[param]
+            modified = True
+
+    # Override params that need explicit values (not just removal)
+    for param, value in _PARAM_OVERRIDES.items():
+        if data.get(param) != value:
+            data[param] = value
             modified = True
 
     tools = data.get("tools")
