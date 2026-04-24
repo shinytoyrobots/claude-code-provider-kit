@@ -148,6 +148,12 @@ _original_uvicorn_run = uvicorn.run
 
 
 def _patched_uvicorn_run(app, **kwargs):
+    # LiteLLM may pass app as an import string (e.g. "module:attr").
+    # Resolve it to the actual object before wrapping.
+    if isinstance(app, str):
+        from importlib import import_module
+        module_path, attr = app.split(":")
+        app = getattr(import_module(module_path), attr)
     print("[claude-code-bridge] Wrapping LiteLLM app with request patcher", file=sys.stderr)
     wrapped = _RequestPatcherMiddleware(app)
     return _original_uvicorn_run(wrapped, **kwargs)
