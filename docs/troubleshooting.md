@@ -12,6 +12,38 @@
 claude --permission-mode dontAsk
 ```
 
+## Model not found / 404 from provider
+
+**Symptom**: Requests fail with "model not found", "The model does not exist", or a 404 error from the provider.
+
+**Cause**: The model ID in the provider YAML does not match the provider's actual model catalog. Model IDs change as providers release new versions.
+
+**Fix**: Verify the model ID against your provider's API, then update the local config:
+
+```bash
+# DeepSeek — list available models
+curl -s https://api.deepseek.com/v1/models \
+  -H "Authorization: Bearer $DEEPSEEK_API_KEY" | python3 -m json.tool
+
+# OpenAI — list available models
+curl -s https://api.openai.com/v1/models \
+  -H "Authorization: Bearer $OPENAI_API_KEY" | python3 -m json.tool
+
+# Gemini — list available models
+curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY" \
+  | python3 -m json.tool
+```
+
+Update the model ID in `~/.config/claude-code-bridge/providers/{provider}.yaml`. For example, if `deepseek-v4-pro` has been renamed:
+
+```yaml
+- model_name: opus
+  litellm_params:
+    model: deepseek/correct-model-name-here
+```
+
+Restart your shell function after editing the YAML.
+
 ## LiteLLM port collision
 
 **Symptom**: "LiteLLM failed to start within 10 seconds" or "Address already in use."

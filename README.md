@@ -2,18 +2,19 @@
 
 Run your existing Claude Code skills on DeepSeek, OpenAI, and Gemini — same skills, same hooks, same workflows, different model.
 
-<!-- Demo GIF storyboard:
+<!-- Demo GIF — uncomment when recorded:
+  ![Demo](docs/assets/demo.gif)
+  Storyboard:
   1. Terminal: run `./install.sh` — shows files being written
   2. Terminal: run `claude-deepseek` — LiteLLM starts, Claude Code launches
   3. Claude Code: invoke a real skill with `model: opus` frontmatter
   4. Claude Code: skill runs successfully, tier routing visibly works
   Total: 20-30 seconds. Record with VHS or asciinema.
 -->
-![Demo](docs/assets/demo.gif)
 
 ## The problem
 
-Claude Code has the best agent runtime for developers: skills, subagents, hooks, MCP servers, per-skill model routing. But it only officially supports Anthropic models. If you want to run your skill library against a cheaper model (DeepSeek V4 at roughly 10x less than Claude Opus) or a specialty model (Gemini's 1M+ token context window), you're on your own — reverse-engineering env vars, standing up a proxy, writing hooks, and guessing tier mappings.
+Claude Code has the best agent runtime for developers: skills, subagents, hooks, MCP servers, per-skill model routing. But it only officially supports Anthropic models. If you want to run your skill library against a cheaper model (DeepSeek V4 at roughly 10x less than Claude Opus) or a specialty model (Gemini's 1M+ token context window), you're on your own. That means reverse-engineering env vars, standing up a proxy, writing hooks, and guessing tier mappings.
 
 **claude-code-bridge** is a configuration kit that handles all of that. One install, pick your provider, and your entire skill library works.
 
@@ -21,7 +22,7 @@ Claude Code has the best agent runtime for developers: skills, subagents, hooks,
 
 ```bash
 # 1. Install LiteLLM (the only dependency)
-pip install 'litellm[proxy]'
+pip install 'litellm[proxy]==1.63.2'
 
 # 2. Clone and install
 git clone https://github.com/shinytoyrobots/claude-code-bridge.git
@@ -77,6 +78,7 @@ Sonnet and Haiku map to the same model for DeepSeek and Gemini because those pro
 See the [troubleshooting guide](docs/troubleshooting.md) for common issues:
 
 - "auto mode unavailable" error
+- Model not found / 404 from provider
 - LiteLLM port collision (default: 4000)
 - API key not set
 - How to verify which model is answering
