@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shellcheck:
+    name: "Lint bash (shellcheck)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: "."
+          additional_files: "templates/hooks/morph-session"
+
+  markdownlint:
+    name: "Lint markdown"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Run markdownlint
+        uses: DavidAnson/markdownlint-cli2-action@v19.1.0
+        with:
+          globs: |
+            README.md
+            docs/*.md
+
+  codespell:
+    name: "Spell check (codespell)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+      - name: Install codespell
+        run: pip install codespell
+      - name: Run codespell
+        run: |
+          codespell --config .codespell.cfg \
+            $(find . -type f \( -name '*.md' -o -name '*.sh' -o -name '*.yaml' -o -name '*.txt' \) \
+              ! -path './sprints/*' ! -path './.git/*' ! -path './node_modules/*')
+
+  install-dry-run:
+    name: "Install dry-run (golden-file diff)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Create litellm stub
+        run: |
+          echo '#!/usr/bin/env bash' > /usr/local/bin/litellm
+          echo 'exit 0' >> /usr/local/bin/litellm
+          chmod +x /usr/local/bin/litellm
+
+      - name: Run install.sh --dry-run
+        env:
+          SHELL: /bin/bash
+        run: |
+          output="$(bash install.sh --dry-run 2>&1)"
+          normalized="$(echo "$output" | sed "s|$(pwd)|REPO_DIR|g; s|${HOME}|HOME|g")"
+          printf '%s\n' "$normalized" > /tmp/dry-run-output.txt
+
+      - name: Diff against golden file
+        run: diff -u .github/fixtures/install-dry-run.golden.txt /tmp/dry-run-output.txt

@@ -1,5 +1,5 @@
 claude-code-bridge: installing
-  shell: zsh (HOME/.zshrc)
+  shell: bash (HOME/.bashrc)
   providers: deepseek openai gemini
   install dir: HOME/.config/claude-code-bridge
 
@@ -13,13 +13,13 @@ claude-code-bridge: installing
   [ok] Copied provider configs: deepseek openai gemini
   COPY REPO_DIR/templates/hooks/morph-session -> HOME/.claude/hooks/morph-session
   [ok] Installed SessionStart hook
-  ADD marker block to HOME/.zshrc (source HOME/.config/claude-code-bridge/templates/shell-functions.zsh)
-  [ok] Added shell functions to HOME/.zshrc
+  ADD marker block to HOME/.bashrc (source HOME/.config/claude-code-bridge/templates/shell-functions.bash)
+  [ok] Added shell functions to HOME/.bashrc
 
 claude-code-bridge: installed successfully.
 
 Next steps:
-  1. Restart your shell (or run: source HOME/.zshrc)
+  1. Restart your shell (or run: source HOME/.bashrc)
   2. Set your API key:
      export DEEPSEEK_API_KEY="your-key"
      export OPENAI_API_KEY="your-key"
@@ -28,4 +28,3 @@ Next steps:
      claude-deepseek
      claude-openai
      claude-gemini
-
