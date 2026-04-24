@@ -12,10 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4.2.2
       - name: Run ShellCheck
-        uses: ludeeus/action-shellcheck@2.0.0
-        with:
-          scandir: "."
-          additional_files: "templates/hooks/morph-session"
+        run: |
+          shellcheck $(find . -name '*.sh' ! -path './.git/*') templates/hooks/morph-session
 
   markdownlint:
     name: "Lint markdown"
