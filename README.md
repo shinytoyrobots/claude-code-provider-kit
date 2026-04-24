@@ -2,16 +2,6 @@
 
 Run your existing Claude Code skills on DeepSeek, OpenAI, and Gemini — same skills, same hooks, same workflows, different model.
 
-<!-- Demo GIF — uncomment when recorded:
-  ![Demo](docs/assets/demo.gif)
-  Storyboard:
-  1. Terminal: run `./install.sh` — shows files being written
-  2. Terminal: run `claude-deepseek` — LiteLLM starts, Claude Code launches
-  3. Claude Code: invoke a real skill with `model: opus` frontmatter
-  4. Claude Code: skill runs successfully, tier routing visibly works
-  Total: 20-30 seconds. Record with VHS or asciinema.
--->
-
 ## The problem
 
 Claude Code has the best agent runtime for developers: skills, subagents, hooks, MCP servers, per-skill model routing. But it only officially supports Anthropic models. If you want to run your skill library against a cheaper model (DeepSeek V4 at roughly 10x less than Claude Opus) or a specialty model (Gemini's 1M+ token context window), you're on your own. That means reverse-engineering env vars, standing up a proxy, writing hooks, and guessing tier mappings.
