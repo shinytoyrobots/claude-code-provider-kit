@@ -118,8 +118,55 @@ GUIDANCE+="\n5. ACTION BIAS: Call tools directly — do not describe what you wo
 GUIDANCE+=" actually do it. Write detailed, self-contained prompts for subagents"
 GUIDANCE+=" including file paths and expected output format."
 
-cat <<MORPH
-{
-  "contextModification": "${GUIDANCE}"
-}
-MORPH
+# ---------------------------------------------------------------------------
+# Catalog injection (story-002)
+# AC-1: When catalog non-empty, append a "CUSTOM AGENTS AVAILABLE" section.
+# AC-2: Append the "HOW TO LAUNCH A CUSTOM AGENT" convention block.
+# AC-3: When catalog empty, append neither section.
+# AC-4: If total guidance > 4000 chars, truncate catalog from tail; add note.
+# AC-5: Emit valid JSON — use jq -n --arg to guarantee correct escaping of
+#        all free-form text (descriptions may contain quotes, colons, backslashes).
+# ---------------------------------------------------------------------------
+
+if [[ -n "$AGENT_CATALOG" ]]; then
+  # Build the catalog listing section.
+  CATALOG_SECTION=$'\n\nCUSTOM AGENTS AVAILABLE:'
+  while IFS= read -r entry; do
+    CATALOG_SECTION+=$'\n'"  ${entry}"
+  done <<< "$AGENT_CATALOG"
+
+  # The launch convention block (exact wording from story-002 spec).
+  LAUNCH_SECTION=$'\n\nHOW TO LAUNCH A CUSTOM AGENT:'
+  LAUNCH_SECTION+=$'\nWhen you need to use one of the custom agents listed above, call the Agent tool with:'
+  LAUNCH_SECTION+=$'\n  - subagent_type: "general-purpose"'
+  LAUNCH_SECTION+=$'\n  - prompt: "You are the {agent-name} agent. Read and follow the agent definition at ~/.claude/commands/agents/{agent-name}.md exactly. Then perform the following task: {description of what you need the agent to do}"'
+  LAUNCH_SECTION+=$'\n'
+  LAUNCH_SECTION+=$'\nDo NOT use the agent name as the subagent_type — only "general-purpose" works.'
+  LAUNCH_SECTION+=$'\nDo NOT try to invoke custom agents any other way.'
+
+  # AC-4: Truncation — preserve core guidance; trim catalog from tail if needed.
+  FULL_GUIDANCE="${GUIDANCE}${CATALOG_SECTION}${LAUNCH_SECTION}"
+  if (( ${#FULL_GUIDANCE} > 4000 )); then
+    # How many chars remain for the catalog after core + launch sections?
+    CORE_AND_LAUNCH="${GUIDANCE}${LAUNCH_SECTION}"
+    AVAILABLE=$(( 4000 - ${#CORE_AND_LAUNCH} - 50 ))  # 50-char buffer for truncation note
+
+    if (( AVAILABLE > 0 )); then
+      # Truncate CATALOG_SECTION to available budget.
+      CATALOG_SECTION="${CATALOG_SECTION:0:${AVAILABLE}}"
+      # Trim at last newline to avoid a broken mid-entry line.
+      CATALOG_SECTION="${CATALOG_SECTION%$'\n'*}"
+      CATALOG_SECTION+=$'\n  [catalog truncated — additional agents omitted]'
+    else
+      # No room for catalog at all; suppress it entirely.
+      CATALOG_SECTION=""
+    fi
+    GUIDANCE="${GUIDANCE}${CATALOG_SECTION}${LAUNCH_SECTION}"
+  else
+    GUIDANCE="${FULL_GUIDANCE}"
+  fi
+fi
+
+# Emit final JSON. jq -n --arg guarantees correct escaping of all fields,
+# including any quotes, backslashes, colons, or newlines in agent descriptions.
+jq -n --arg ctx "$GUIDANCE" '{"contextModification": $ctx}'
