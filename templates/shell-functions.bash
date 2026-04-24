@@ -56,12 +56,12 @@ _claude_code_bridge_launch() {
   local provider_config="${config_dir}/${config_file}"
 
   # If port is already in use and user didn't explicitly choose it, scan for a free one.
-  if (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null && [ -z "${CLAUDE_BRIDGE_PROXY_PORT:-}" ]; then
+  if nc -z localhost "$port" 2>/dev/null && [ -z "${CLAUDE_BRIDGE_PROXY_PORT:-}" ]; then
     local max_port=$((port + 10))
-    while (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null && [ "$port" -lt "$max_port" ]; do
+    while nc -z localhost "$port" 2>/dev/null && [ "$port" -lt "$max_port" ]; do
       port=$((port + 1))
     done
-    if (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null; then
+    if nc -z localhost "$port" 2>/dev/null; then
       echo "claude-code-bridge: ports 4000-4010 all in use." >&2
       echo "Set CLAUDE_BRIDGE_PROXY_PORT to an available port." >&2
       return 1
@@ -71,7 +71,7 @@ _claude_code_bridge_launch() {
   local log="/tmp/claude-code-bridge-litellm-${port}.log"
 
   # Start LiteLLM if not already running on the selected port.
-  if ! (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null; then
+  if ! nc -z localhost "$port" 2>/dev/null; then
     echo "Starting LiteLLM proxy on port ${port}..."
     nohup litellm \
       --config "$base_config" \
@@ -80,12 +80,12 @@ _claude_code_bridge_launch() {
       > "$log" 2>&1 &
 
     local i=0
-    while ! (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null && [ "$i" -lt 20 ]; do
+    while ! nc -z localhost "$port" 2>/dev/null && [ "$i" -lt 20 ]; do
       sleep 0.5
       i=$((i + 1))
     done
 
-    if ! (exec 3<>"/dev/tcp/localhost/${port}") 2>/dev/null; then
+    if ! nc -z localhost "$port" 2>/dev/null; then
       echo "claude-code-bridge: LiteLLM failed to start within 10 seconds." >&2
       echo "Check the log: $log" >&2
       return 1
