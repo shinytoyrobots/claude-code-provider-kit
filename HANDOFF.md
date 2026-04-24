@@ -15,7 +15,11 @@ ASGI middleware in `start-proxy.py` handles all providers: stripping `context_ma
 
 ## Immediate Next Steps
 
-### 1. CRITICAL: DeepSeek model deprecation (deadline July 24, 2026)
+### 1. Demo GIF for README
+
+Record a 20-30 second terminal demo showing: `./install.sh` → `claude-deepseek` launching → a skill invocation with tier routing visible. Use VHS or asciinema. Place at `docs/assets/demo.gif` and add `![Demo](docs/assets/demo.gif)` below the tagline in README.md.
+
+### 2. CRITICAL: DeepSeek model deprecation (deadline July 24, 2026)
 
 Both `deepseek-chat` and `deepseek-reasoner` are deprecated legacy model names:
 - `deepseek-chat` maps to `deepseek-v4-flash` internally
