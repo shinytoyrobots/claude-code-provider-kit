@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""claude-code-bridge — LiteLLM proxy launcher with schema-fixing middleware.
+"""claude-code-bridge — LiteLLM proxy launcher with request-patching middleware.
 
 LiteLLM's callback hooks don't fire for Anthropic-format requests (which
 Claude Code sends). This script wraps the LiteLLM proxy app with raw ASGI
-middleware that patches malformed tool schemas at the HTTP layer — before
-any endpoint handler runs.
+middleware that patches requests at the HTTP layer — before any endpoint
+handler runs.
+
+Two transformations:
+  1. Strip remote MCP tools (mcp__claude_ai_*) — they only work via
+     claude.ai and add noise for other providers.
+  2. Fix malformed array schemas (missing `items`) that strict providers
+     like OpenAI reject.
 
 Usage (drop-in replacement for `litellm`):
   python3 start-proxy.py --config base.yaml --config provider.yaml --port 4000
@@ -12,6 +18,8 @@ Usage (drop-in replacement for `litellm`):
 
 import json
 import sys
+
+_REMOTE_MCP_PREFIX = "mcp__claude_ai_"
 
 
 def _fix_array_schemas(schema):
@@ -31,26 +39,47 @@ def _fix_array_schemas(schema):
             _fix_array_schemas(sub)
 
 
-def _patch_tool_schemas(data):
-    """Patch all tool schemas in a request body. Returns True if any patched."""
+def _tool_name(tool):
+    """Extract name from any tool format (Anthropic, Chat Completions, Responses)."""
+    func = tool.get("function")
+    if isinstance(func, dict):
+        return func.get("name", "")
+    return tool.get("name", "")
+
+
+def _patch_request(data):
+    """Strip remote MCP tools and fix schemas. Returns True if modified."""
     tools = data.get("tools")
     if not tools:
         return False
-    found = False
+
+    modified = False
+
+    # Strip remote MCP tools
+    original_count = len(tools)
+    tools[:] = [t for t in tools if not _tool_name(t).startswith(_REMOTE_MCP_PREFIX)]
+    stripped = original_count - len(tools)
+    if stripped:
+        print(
+            f"[claude-code-bridge] Stripped {stripped} remote MCP tools ({original_count} → {len(tools)})",
+            file=sys.stderr,
+        )
+        modified = True
+
+    # Fix array schemas missing `items`
     for tool in tools:
         for key in ("input_schema", "parameters"):
             if key in tool and isinstance(tool[key], dict):
                 _fix_array_schemas(tool[key])
-                found = True
         func = tool.get("function")
         if isinstance(func, dict) and "parameters" in func:
             _fix_array_schemas(func["parameters"])
-            found = True
-    return found
+
+    return modified or bool(tools)
 
 
-class _SchemaFixerMiddleware:
-    """ASGI middleware that patches tool schemas in POST request bodies."""
+class _RequestPatcherMiddleware:
+    """ASGI middleware that patches tool lists in POST request bodies."""
 
     def __init__(self, app):
         self.app = app
@@ -71,12 +100,8 @@ class _SchemaFixerMiddleware:
 
         try:
             data = json.loads(body)
-            if _patch_tool_schemas(data):
+            if _patch_request(data):
                 body = json.dumps(data).encode("utf-8")
-                print(
-                    "[claude-code-bridge] Patched array schemas in tool definitions",
-                    file=sys.stderr,
-                )
         except (json.JSONDecodeError, Exception):
             pass
 
@@ -94,7 +119,7 @@ class _SchemaFixerMiddleware:
 
 from litellm.proxy.proxy_server import app  # noqa: E402
 
-app.add_middleware(_SchemaFixerMiddleware)
+app.add_middleware(_RequestPatcherMiddleware)
 
 from litellm.proxy.proxy_cli import run_server  # noqa: E402
 
