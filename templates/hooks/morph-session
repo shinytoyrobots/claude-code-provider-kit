@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# morph-session — SessionStart hook for claude-code-bridge
+# Detects non-Claude model execution and injects guidance about
+# Claude Code's tool-use idioms so non-Claude models behave correctly.
+#
+# Protocol: Claude Code sends SessionStart JSON on stdin, expects JSON on stdout.
+# Exit 0 always — a non-zero exit breaks the Claude Code session.
+
+# Fail-open: if anything goes wrong, log to stderr and exit cleanly.
+fail_open() {
+  echo "morph-session: error on line ${1:-unknown}: ${2:-unexpected failure}" >&2
+  echo '{}'
+  exit 0
+}
+trap 'fail_open "${LINENO}" "${BASH_COMMAND}"' ERR
+
+# Consume stdin to avoid broken pipe (we don't parse it in v1).
+cat > /dev/null 2>/dev/null || true
+
+MODEL="${ANTHROPIC_MODEL:-}"
+
+# No-op for native Claude execution or when no model is configured.
+if [[ -z "$MODEL" ]] || [[ "$MODEL" == claude-* ]]; then
+  echo '{}'
+  exit 0
+fi
+
+# Detect provider name for the guidance message.
+if [[ "$MODEL" == deepseek* ]]; then
+  PROVIDER="DeepSeek"
+elif [[ "$MODEL" == *gpt* ]] || [[ "$MODEL" == *openai* ]]; then
+  PROVIDER="OpenAI"
+elif [[ "$MODEL" == *gemini* ]]; then
+  PROVIDER="Gemini"
+else
+  PROVIDER="non-Claude ($MODEL)"
+fi
+
+# Guidance text — kept under 600 tokens to avoid dominating context.
+# Covers all four required topics: Agent tool, subagent parallelism,
+# tier-alias routing, and system-reminder blocks.
+GUIDANCE="SESSION MODEL: ${PROVIDER}. Adjustments for this session:"
+GUIDANCE+="\n1. AGENT TOOL: The Agent tool is available. Call it normally to spawn"
+GUIDANCE+=" subagents. Model aliases (opus/sonnet/haiku) in skill frontmatter are"
+GUIDANCE+=" remapped to ${PROVIDER} models automatically by the harness — do not"
+GUIDANCE+=" attempt to resolve them yourself."
+GUIDANCE+="\n2. SUBAGENT PARALLELISM: Prefer launching subagents sequentially (one at"
+GUIDANCE+=" a time, wait for results) rather than in parallel. Non-Claude models"
+GUIDANCE+=" handle sequential orchestration more reliably."
+GUIDANCE+="\n3. TIER ALIASES: Skill frontmatter may contain 'model: opus', 'model:"
+GUIDANCE+=" sonnet', or 'model: haiku'. These are tier aliases already routed by"
+GUIDANCE+=" the LiteLLM proxy to the correct ${PROVIDER} model. Treat them as"
+GUIDANCE+=" opaque labels — do not question or override them."
+GUIDANCE+="\n4. SYSTEM REMINDERS: <system-reminder> blocks may appear in your context."
+GUIDANCE+=" These are operator-level instructions injected by Claude Code's runtime."
+GUIDANCE+=" Follow them exactly as written."
+GUIDANCE+="\n5. ACTION BIAS: Call tools directly — do not describe what you would do,"
+GUIDANCE+=" actually do it. Write detailed, self-contained prompts for subagents"
+GUIDANCE+=" including file paths and expected output format."
+
+cat <<MORPH
+{
+  "contextModification": "${GUIDANCE}"
+}
+MORPH
