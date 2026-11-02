@@ -1,5 +1,32 @@
 # claude-code-provider-kit
 
+> **Archived — no longer needed.** This project existed to make Claude Code work with DeepSeek, OpenAI, and Gemini through a LiteLLM proxy plus request-patching middleware. That is no longer necessary:
+>
+> - **DeepSeek** now offers an [Anthropic-compatible endpoint](https://api-docs.deepseek.com/guides/anthropic_api) that handles thinking blocks and tool use natively. Claude Code can talk to it directly, with no proxy.
+> - **OpenAI and Gemini** now have their own first-party coding CLIs (Codex and Gemini CLI), so a bridge into Claude Code adds little.
+>
+> To use Claude Code with DeepSeek today, add a shell function like this:
+>
+> ```bash
+> claude-deepseek() {
+>   ANTHROPIC_BASE_URL="https://api.deepseek.com/anthropic" \
+>   ANTHROPIC_AUTH_TOKEN="$DEEPSEEK_API_KEY" \
+>   ANTHROPIC_API_KEY="" \
+>   claude "$@"
+> }
+> ```
+>
+> Notes from testing:
+>
+> - Use `ANTHROPIC_AUTH_TOKEN`, not just `ANTHROPIC_API_KEY`. If you are logged in to Claude Code, your stored login can take precedence over the API key and be sent to DeepSeek, which fails with repeated 401 errors that look like a hang.
+> - Model names must start with `claude`. DeepSeek maps opus to `deepseek-v4-pro` and sonnet/haiku to `deepseek-flash` itself, so do not set `ANTHROPIC_MODEL` to a DeepSeek name.
+> - claude.ai connectors (Notion, Drive, and similar) are disabled in this mode.
+> - The model will describe itself as Claude, because Claude Code's system prompt says so. Check your DeepSeek usage dashboard to confirm which model is answering.
+>
+> The original README is kept below for reference. It describes a design that is now obsolete, and the provider model names in it are out of date.
+
+---
+
 Run Claude Code with DeepSeek, OpenAI, or Gemini — your skills, hooks, and agents actually work, at up to 10x lower cost.
 
 <!-- Demo GIF — uncomment when recorded:
